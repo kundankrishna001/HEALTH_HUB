@@ -1,0 +1,8 @@
+{
+  "name": "health-hub-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
