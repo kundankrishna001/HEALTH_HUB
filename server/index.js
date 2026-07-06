@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
-import { authMiddleware, signToken } from './auth.js';
+import { authMiddleware, adminMiddleware, signToken } from './auth.js';
 import { getOrCreateState, initDatabase, query, saveState } from './db.js';
 import { createDefaultState } from './defaultState.js';
 import { deepMerge, normalizeList } from './utils.js';
@@ -13,6 +13,10 @@ dotenv.config({ path: fileURLToPath(new URL('.env', import.meta.url)) });
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
+const isDev = process.env.NODE_ENV !== 'production';
+
+const isValidEmail = (email) => typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const isValidPassword = (password) => typeof password === 'string' && password.length >= 6;
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
@@ -26,6 +30,12 @@ app.post('/api/auth/signup', async (req, res, next) => {
     const { name, email, password } = req.body || {};
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address.' });
+    }
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
     const existing = await query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
@@ -53,6 +63,9 @@ app.post('/api/auth/login', async (req, res, next) => {
     const { email, password } = req.body || {};
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
+    }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address.' });
     }
 
     const rows = await query('SELECT id, name, email, role, password_hash FROM users WHERE email = ?', [
@@ -128,10 +141,15 @@ app.post('/api/auth/reset-request', async (req, res, next) => {
     if (!email) {
       return res.status(400).json({ message: 'Email is required.' });
     }
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: 'Enter a valid email address.' });
+    }
 
     const rows = await query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
     if (!rows.length) {
-      return res.status(404).json({ message: 'No account found with that email.' });
+      return res.json({
+        message: 'If an account exists for that email, a reset link has been sent.'
+      });
     }
 
     const token = crypto.randomUUID();
@@ -142,11 +160,16 @@ app.post('/api/auth/reset-request', async (req, res, next) => {
       rows[0].id
     ]);
 
-    res.json({
-      message: 'Password reset link generated.',
-      resetToken: token,
-      resetLink: `${process.env.PUBLIC_APP_URL || 'http://localhost:5173'}/reset-password?token=${token}`
-    });
+    const resetLink = `${process.env.PUBLIC_APP_URL || 'http://localhost:5173'}/reset-password?token=${token}`;
+    const response = {
+      message: 'If an account exists for that email, a reset link has been sent.'
+    };
+
+    if (isDev) {
+      response.resetLink = resetLink;
+    }
+
+    res.json(response);
   } catch (error) {
     next(error);
   }
@@ -157,6 +180,9 @@ app.post('/api/auth/reset-password', async (req, res, next) => {
     const { token, password } = req.body || {};
     if (!token || !password) {
       return res.status(400).json({ message: 'Token and password are required.' });
+    }
+    if (!isValidPassword(password)) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
     const rows = await query(
@@ -190,7 +216,7 @@ app.get('/api/state', authMiddleware, async (req, res, next) => {
   }
 });
 
-app.get('/api/admin/diagnostics', authMiddleware, async (req, res, next) => {
+app.get('/api/admin/diagnostics', authMiddleware, adminMiddleware, async (req, res, next) => {
   try {
     const [userRows, stateRows, currentUserRows] = await Promise.all([
       query('SELECT COUNT(*) AS count FROM users'),
@@ -232,8 +258,14 @@ app.put('/api/state', authMiddleware, async (req, res, next) => {
   try {
     const userRows = await query('SELECT id, name, email, role FROM users WHERE id = ?', [req.user.id]);
     const profile = userRows[0];
+    if (!profile) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
     const current = await getOrCreateState(req.user.id, profile);
-    const patch = req.body || {};
+    const patch = req.body;
+    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+      return res.status(400).json({ message: 'State patch must be a JSON object.' });
+    }
     const nextState = deepMerge(current, patch);
     await saveState(req.user.id, nextState);
     res.json({ state: nextState });
@@ -295,6 +327,9 @@ app.use((error, _req, res, _next) => {
 });
 
 async function start() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is required. Set it in server/.env before starting the API.');
+  }
   await initDatabase();
   app.listen(port, () => {
     console.log(`Health Hub API running on http://localhost:${port}`);

@@ -12,7 +12,8 @@ const baseConfig = {
   password: process.env.MYSQL_PASSWORD || '',
   waitForConnections: true,
   connectionLimit: 10,
-  namedPlaceholders: true
+  namedPlaceholders: true,
+  connectTimeout: 10000
 };
 
 const adminPool = mysql.createPool(baseConfig);

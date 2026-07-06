@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import PageHeader from '../components/ui/PageHeader';
 import SectionCard from '../components/ui/SectionCard';
 import TextField from '../components/ui/TextField';
@@ -10,11 +11,37 @@ export default function FoodScanner() {
   const { scanFoodFromText } = useApp();
   const [text, setText] = useState('');
   const [barcode, setBarcode] = useState('');
+  const [imageHint, setImageHint] = useState('');
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setImageHint('');
+      return;
+    }
+    setImageHint(file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
+  };
 
   const handleScan = async () => {
-    const res = await scanFoodFromText(`${text} ${barcode}`);
-    setResult(res);
+    const query = [text.trim(), barcode.trim(), imageHint.trim()].filter(Boolean).join(' ');
+    if (!query) {
+      toast.error('Describe the meal, enter a barcode, or upload an image');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await scanFoodFromText(query);
+      setResult(res);
+      if (!res) toast.error('No scan result returned');
+      else toast.success('Food scanned');
+    } catch (error) {
+      toast.error(error?.message || 'Could not scan food');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,23 +53,24 @@ export default function FoodScanner() {
           <TextField label="Barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
           <label style={{ display: 'grid', gap: 8 }}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>Upload image</span>
-            <input type="file" accept="image/*" capture="environment" />
+            <input type="file" accept="image/*" capture="environment" onChange={handleImageChange} />
+            {imageHint ? <span className="muted" style={{ fontSize: 13 }}>Using image hint: {imageHint}</span> : null}
           </label>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-          <PrimaryButton onClick={handleScan}>Scan</PrimaryButton>
+          <PrimaryButton onClick={handleScan} disabled={loading}>{loading ? 'Scanning…' : 'Scan'}</PrimaryButton>
         </div>
       </SectionCard>
       {result ? (
         <div className="grid-2">
           <SectionCard title="Detected meal">
             <Badge tone="primary">{result.item}</Badge>
-            <p className="muted">Calories: {result.calories}</p>
-            <p>{result.nutrition}</p>
+            <p className="muted">Calories: {result.calories ?? '—'}</p>
+            <p>{result.nutrition || 'No nutrition details available.'}</p>
           </SectionCard>
           <SectionCard title="Health fit">
-            <p>{result.diseaseSafe}</p>
-            <p>{result.healthier}</p>
+            <p>{result.diseaseSafe || 'No disease-safety notes.'}</p>
+            <p>{result.healthier || 'No healthier alternatives listed.'}</p>
           </SectionCard>
         </div>
       ) : null}

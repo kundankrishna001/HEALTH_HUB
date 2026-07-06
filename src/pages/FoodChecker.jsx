@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import TextField from '../components/ui/TextField';
 import PrimaryButton from '../components/ui/PrimaryButton';
 import Badge from '../components/ui/Badge';
@@ -6,22 +7,36 @@ import SectionCard from '../components/ui/SectionCard';
 import { useApp } from '../context/AppContext';
 import FeatureHubShell from '../layouts/FeatureHubShell';
 
+const asList = (value) => (Array.isArray(value) ? value : []);
+
 export default function FoodChecker() {
   const { checkFood } = useApp();
   const [food, setFood] = useState('');
   const [meds, setMeds] = useState('');
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleCheck = async () => {
-    const res = await checkFood(
-      food,
-      {},
-      meds
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean)
-    );
-    setResult(res);
+    if (!food.trim()) {
+      toast.error('Enter a food item to check');
+      return;
+    }
+
+    const medsList = meds
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    setLoading(true);
+    try {
+      const res = await checkFood(food.trim(), medsList);
+      setResult(res);
+      if (!res) toast.error('No safety data returned');
+    } catch (error) {
+      toast.error(error?.message || 'Could not check food');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,8 +59,9 @@ export default function FoodChecker() {
           <PrimaryButton
             style={{ marginTop: 14 }}
             onClick={handleCheck}
+            disabled={loading}
           >
-            Check food
+            {loading ? 'Checking…' : 'Check food'}
           </PrimaryButton>
         </SectionCard>
 
@@ -53,15 +69,15 @@ export default function FoodChecker() {
           <SectionCard title="Verdict & recommendations">
             <div style={{ display: 'grid', gap: 10 }}>
               <Badge tone={result.safe ? 'success' : 'danger'}>{result.safe ? 'Safe' : 'Use caution'}</Badge>
-              <p className="muted">Suggested quantity: {result.quantity}</p>
-              <p>{result.explanation}</p>
+              <p className="muted">Suggested quantity: {result.quantity || '—'}</p>
+              <p>{result.explanation || 'No explanation available.'}</p>
             </div>
 
             <div style={{ marginTop: 16 }}>
               <div className="divider">Alternatives and benefits</div>
-              <p style={{ marginTop: 10 }}>{result.interactions}</p>
-              <p>Alternatives: {result.alternatives.join(', ')}</p>
-              <p>Benefits: {result.benefits.join(', ')}</p>
+              <p style={{ marginTop: 10 }}>{result.interactions || 'No interaction notes.'}</p>
+              <p>Alternatives: {asList(result.alternatives).join(', ') || '—'}</p>
+              <p>Benefits: {asList(result.benefits).join(', ') || '—'}</p>
             </div>
           </SectionCard>
         ) : (
@@ -73,4 +89,3 @@ export default function FoodChecker() {
     </FeatureHubShell>
   );
 }
-

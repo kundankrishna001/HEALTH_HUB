@@ -48,8 +48,10 @@ export default function SymptomChecker() {
     setPlanLoading(true);
     try {
       const plan = await generateWeeklyPlan(result?.condition || input);
-      setDietPlan(Array.isArray(plan) ? plan : []);
-      toast.success('Symptom-specific diet plan generated');
+      const nextPlan = Array.isArray(plan) ? plan : [];
+      setDietPlan(nextPlan);
+      if (!nextPlan.length) toast.error('No diet plan returned. Try again.');
+      else toast.success('Symptom-specific diet plan generated');
     } catch (error) {
       toast.error(error?.message || 'Could not generate diet plan');
     } finally {
@@ -59,12 +61,16 @@ export default function SymptomChecker() {
 
   const handleSaveDiet = async () => {
     if (!dietPlan.length) return;
-    await saveDietPlan({
-      title: `${result?.condition || 'Symptom'} plan`,
-      source: result?.condition || input,
-      days: dietPlan
-    });
-    toast.success('Diet plan saved to your library');
+    try {
+      await saveDietPlan({
+        title: `${result?.condition || 'Symptom'} plan`,
+        source: result?.condition || input,
+        days: dietPlan
+      });
+      toast.success('Diet plan saved to your library');
+    } catch (error) {
+      toast.error(error?.message || 'Could not save diet plan');
+    }
   };
 
   const dietRows = useMemo(() => dietPlan.map((item, index) => ({ id: index, ...item })), [dietPlan]);

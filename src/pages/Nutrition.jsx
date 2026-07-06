@@ -106,10 +106,22 @@ export default function Nutrition() {
             style={{ marginTop: 14 }}
             onClick={async () => {
               const cal = coerceNumber(calories);
-              if (!mealName.trim() || !cal) return;
-              await logMeal({ name: mealName.trim(), meal: mealName.trim(), calories: cal });
-              setMealName('');
-              setCalories('');
+              if (!mealName.trim()) {
+                toast.error('Enter a meal name');
+                return;
+              }
+              if (!cal) {
+                toast.error('Enter calories greater than 0');
+                return;
+              }
+              try {
+                await logMeal({ name: mealName.trim(), meal: mealName.trim(), calories: cal });
+                setMealName('');
+                setCalories('');
+                toast.success('Meal logged');
+              } catch (error) {
+                toast.error(error?.message || 'Could not save meal');
+              }
             }}
           >
             Save meal

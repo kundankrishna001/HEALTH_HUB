@@ -34,11 +34,17 @@ export default function Login() {
 
   const onSubmit = async (values) => {
     try {
-      await login(values);
+      const nextUser = await login({ email: values.email, password: values.password });
+      if (!nextUser) {
+        throw new Error('Sign in failed. Please try again.');
+      }
       toast.success(rememberMe ? 'Welcome back, session saved.' : 'Welcome back.');
-      navigate('/app');
+      navigate('/app', { replace: true });
     } catch (error) {
-      toast.error(error?.message || 'Sign in failed');
+      const message = error?.message;
+      toast.error(typeof message === 'string' && message.trim() && !message.includes('undefined')
+        ? message
+        : 'Sign in failed. Check your email and password.');
     }
   };
 
@@ -116,7 +122,7 @@ export default function Login() {
                 toast.success('Logged in as Demo User');
                 navigate('/app');
               } catch (error) {
-                toast.error('Failed to log in as demo user');
+                toast.error(error?.message || 'Failed to log in as demo user');
               }
             }}
           >

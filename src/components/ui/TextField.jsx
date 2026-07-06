@@ -1,15 +1,26 @@
 import React, { forwardRef } from 'react';
 
+function mergeRefs(...refs) {
+  return (node) => {
+    refs.forEach((ref) => {
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    });
+  };
+}
+
 const TextField = forwardRef(function TextField(
   { label, error, helperText, ...props },
   ref
 ) {
+  const { ref: fieldRef, ...inputProps } = props;
+
   return (
     <label className="field">
       <span>{label}</span>
       <input
-        {...props}
-        ref={ref}
+        {...inputProps}
+        ref={mergeRefs(ref, fieldRef)}
         aria-invalid={Boolean(error)}
         style={error ? { borderColor: 'var(--danger)' } : undefined}
       />
@@ -26,4 +37,3 @@ const TextField = forwardRef(function TextField(
 });
 
 export default TextField;
-

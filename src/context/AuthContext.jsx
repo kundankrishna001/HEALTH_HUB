@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   hasBackendConfig,
   loginWithEmail,
   logoutUser,
   observeSession,
+  resetPassword,
   sendResetEmail,
   signupWithEmail,
   loginDemo
 } from '../services/authService';
+import { setUnauthorizedHandler } from '../services/httpClient';
 
 const AuthContext = createContext(null);
 
@@ -16,6 +19,7 @@ export function AuthProvider({ children }) {
   const [bootstrapped, setBootstrapped] = useState(false);
 
   useEffect(() => {
+    setUnauthorizedHandler(() => setUser(null));
     const unsubscribe = observeSession((nextUser) => {
       setUser(nextUser || null);
       setBootstrapped(true);
@@ -30,20 +34,21 @@ export function AuthProvider({ children }) {
       hasBackendConfig,
       login: async (credentials) => {
         const nextUser = await loginWithEmail(credentials);
-        setUser(nextUser);
+        flushSync(() => setUser(nextUser));
         return nextUser;
       },
       signup: async (credentials) => {
         const nextUser = await signupWithEmail(credentials);
-        setUser(nextUser);
+        flushSync(() => setUser(nextUser));
         return nextUser;
       },
       loginDemo: async () => {
         const nextUser = await loginDemo();
-        setUser(nextUser);
+        flushSync(() => setUser(nextUser));
         return nextUser;
       },
       sendResetEmail,
+      resetPassword,
       logout: async () => {
         await logoutUser();
         setUser(null);

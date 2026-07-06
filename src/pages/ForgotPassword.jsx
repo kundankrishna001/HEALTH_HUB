@@ -23,7 +23,11 @@ export default function ForgotPassword() {
   const onSubmit = async ({ email }) => {
     try {
       const response = await sendResetEmail(email);
-      toast.success(response?.message || 'Password reset link generated');
+      toast.success(response?.message || 'If an account exists, a reset link has been sent.');
+      if (response?.resetLink) {
+        toast.info('Development reset link copied to clipboard');
+        await navigator.clipboard.writeText(response.resetLink);
+      }
     } catch (error) {
       toast.error(error?.message || 'Unable to create reset link');
     }

@@ -6,9 +6,11 @@ import AuthLayout from './layouts/AuthLayout';
 import LoadingScreen from './components/ui/LoadingScreen';
 
 const Welcome = lazy(() => import('./pages/Welcome'));
+const Features = lazy(() => import('./pages/Features'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Profile = lazy(() => import('./pages/Profile'));
 const SymptomChecker = lazy(() => import('./pages/SymptomChecker'));
@@ -42,6 +44,7 @@ export default function App() {
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route path="/" element={<Welcome />} />
+        <Route path="/features" element={<Features />} />
         <Route path="/about" element={<About />} />
         <Route
           path="/login"
@@ -64,6 +67,14 @@ export default function App() {
           element={
             <AuthLayout>
               <ForgotPassword />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <AuthLayout>
+              <ResetPassword />
             </AuthLayout>
           }
         />

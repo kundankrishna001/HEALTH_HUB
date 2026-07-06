@@ -1,17 +1,6 @@
 import { bmiCategory } from '../utils/calculations';
 import { apiRequest } from './httpClient';
 
-const toList = (value) => {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  return [];
-};
-
 async function fetchFallback(type, query = '', profile = {}) {
   try {
     const res = await apiRequest('/ai-fallback', {
@@ -27,9 +16,8 @@ async function fetchFallback(type, query = '', profile = {}) {
 
 export async function detectSymptoms(symptomsString, profile) {
   try {
-    // Simulate AI failure and directly fallback to DB
     throw new Error('AI Engine simulated failure');
-  } catch (error) {
+  } catch {
     const fallback = await fetchFallback('symptoms', symptomsString, profile);
     return fallback || {
       condition: 'Unknown',
@@ -49,26 +37,29 @@ export async function detectSymptoms(symptomsString, profile) {
 export async function generateWeeklyPlan(query = '', profile = {}) {
   try {
     throw new Error('AI Engine simulated failure');
-  } catch (error) {
+  } catch {
     const fallback = await fetchFallback('weeklyPlan', query, profile);
     return fallback || [];
   }
 }
 
-export async function generateRecipe(ingredients, type, profile) {
+export async function generateRecipe(keyword, servings = 4, profile = {}) {
+  const query = keyword ? `${keyword}|servings:${servings}` : `servings:${servings}`;
   try {
     throw new Error('AI Engine simulated failure');
-  } catch (error) {
-    const fallback = await fetchFallback('recipe', ingredients, profile);
+  } catch {
+    const fallback = await fetchFallback('recipe', query, profile);
     return fallback || null;
   }
 }
 
-export async function checkFood(foodString, profile) {
+export async function checkFood(foodString, profile, meds = []) {
+  const medsList = Array.isArray(meds) ? meds.filter(Boolean) : [];
+  const query = medsList.length ? `${foodString}|meds:${medsList.join(',')}` : foodString;
   try {
     throw new Error('AI Engine simulated failure');
-  } catch (error) {
-    const fallback = await fetchFallback('checkFood', foodString, profile);
+  } catch {
+    const fallback = await fetchFallback('checkFood', query, profile);
     return fallback || {
       safe: false,
       quantity: '',
@@ -83,7 +74,7 @@ export async function checkFood(foodString, profile) {
 export async function scanFoodFromText(text, profile) {
   try {
     throw new Error('AI Engine simulated failure');
-  } catch (error) {
+  } catch {
     const fallback = await fetchFallback('scanFood', text, profile);
     return fallback || {
       item: text || 'Unknown Item',
@@ -94,4 +85,3 @@ export async function scanFoodFromText(text, profile) {
     };
   }
 }
-

@@ -32,3 +32,10 @@ export function authMiddleware(req, res, next) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
 }
+
+export function adminMiddleware(req, res, next) {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required.' });
+  }
+  return next();
+}

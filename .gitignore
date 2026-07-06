@@ -14,3 +14,5 @@ vite.out.log
 .vscode
 .idea
 Thumbs.db
+deploy/do_deploy_key
+deploy/do_deploy_key.pub

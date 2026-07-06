@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import PageHeader from '../components/ui/PageHeader';
@@ -37,7 +38,18 @@ export default function WaterTracker() {
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
             {[200, 250, 500, 750].map((amount) => (
-              <PrimaryButton key={amount} variant="ghost" onClick={() => logWater(amount)}>
+              <PrimaryButton
+                key={amount}
+                variant="ghost"
+                onClick={async () => {
+                  try {
+                    await logWater(amount);
+                    toast.success(`Added ${amount} ml`);
+                  } catch (error) {
+                    toast.error(error?.message || 'Could not log water');
+                  }
+                }}
+              >
                 +{amount} ml
               </PrimaryButton>
             ))}

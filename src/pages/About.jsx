@@ -17,20 +17,45 @@ export default function About() {
       </SectionCard>
 
       <SectionCard title="Tech Stack & Languages">
-        <p style={{ margin: '0 0 12px 0' }}>Built using modern, scalable web technologies:</p>
+        <p style={{ margin: '0 0 12px 0' }}>Built with a full-stack JavaScript architecture:</p>
         <div style={{ display: 'grid', gap: 12 }}>
           <div>
             <strong style={{ display: 'block', color: 'var(--primary)' }}>Frontend:</strong>
-            <span className="muted">React 19, TypeScript, Tailwind CSS v4</span>
+            <span className="muted">React 18, JavaScript (JSX), Vite, React Router, Chart.js, CSS</span>
           </div>
           <div>
-            <strong style={{ display: 'block', color: 'var(--primary)' }}>Backend & DB:</strong>
-            <span className="muted">Supabase (PostgreSQL)</span>
+            <strong style={{ display: 'block', color: 'var(--primary)' }}>Backend &amp; database:</strong>
+            <span className="muted">Node.js, Express, MySQL, JWT authentication, bcrypt</span>
           </div>
           <div>
-            <strong style={{ display: 'block', color: 'var(--primary)' }}>AI Integration:</strong>
-            <span className="muted">Google Gemini API</span>
+            <strong style={{ display: 'block', color: 'var(--primary)' }}>Health guidance:</strong>
+            <span className="muted">Rule-based AI engine with MySQL fallback knowledge base (symptoms, recipes, food checks, diet plans)</span>
           </div>
+          <div>
+            <strong style={{ display: 'block', color: 'var(--primary)' }}>Deployment:</strong>
+            <span className="muted">DigitalOcean, Nginx, PM2, Certbot (HTTPS) — live at kundankrishna.tech/healthhub</span>
+          </div>
+          <div>
+            <strong style={{ display: 'block', color: 'var(--primary)' }}>Interface languages:</strong>
+            <span className="muted">English, Hindi, Tamil, Telugu, Bengali, Gujarati, Marathi, Punjabi, Kannada</span>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Key Features">
+        <p style={{ margin: '0 0 12px 0', lineHeight: 1.7 }} className="muted">
+          Health Hub brings everyday wellness tools into one dashboard:
+        </p>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {[
+            'Symptom checker with diet plan generation',
+            'Food scanner and food safety checker',
+            'Water tracker, nutrition logging, and health metrics',
+            'Weekly diet plans, recipes, and family profiles',
+            'Achievements, settings, and PDF data export'
+          ].map((item) => (
+            <div key={item} style={{ fontSize: 14, lineHeight: 1.6 }}>• {item}</div>
+          ))}
         </div>
       </SectionCard>
 
@@ -42,14 +67,17 @@ export default function About() {
 
       <SectionCard title="Real-World Practical Use">
         <p style={{ margin: 0, lineHeight: 1.7 }}>
-          In the real world, people often struggle to find structured resources and track their health metrics effectively. Health Hub solves this by giving them personalized diet plans, conducting symptom checks using AI, generating healthy recipes, and curating daily health goals.
+          In the real world, people often struggle to find structured resources and track their health metrics effectively. Health Hub solves this by giving them personalized diet plans, symptom checks, healthy recipes, water and meal tracking, and daily health goals — all in one place.
         </p>
       </SectionCard>
 
       <div className="grid-2" style={{ alignItems: 'start' }}>
-        <SectionCard title="Contact Us">
+        <SectionCard title="Contact &amp; Live App">
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7 }} className="muted">
-            For inquiries or partnerships, please reach out via our official communication channels.
+            For inquiries or partnerships, reach out via GitHub or LinkedIn. The live app is hosted at{' '}
+            <a href="https://kundankrishna.tech/healthhub/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>
+              kundankrishna.tech/healthhub
+            </a>.
           </p>
         </SectionCard>
 

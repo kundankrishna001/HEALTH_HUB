@@ -2,6 +2,8 @@ import dayjs from 'dayjs';
 import { apiRequest } from './httpClient';
 import { calculateBMI, bmiCategory } from '../utils/calculations';
 import { SELF_PROFILE_ID } from '../utils/profileScope';
+import { getToken } from './tokenStore';
+import { getDemoState, isDemoToken, saveDemoState } from './demoMode';
 
 const normalizeList = (value) => {
   if (Array.isArray(value)) return value;
@@ -28,11 +30,22 @@ const sanitizeState = (state) => ({
 });
 
 export async function getState() {
+  if (isDemoToken(getToken())) {
+    return sanitizeState(getDemoState());
+  }
+
   const payload = await apiRequest('/state');
   return sanitizeState(payload.state);
 }
 
 export async function updateState(updater) {
+  if (isDemoToken(getToken())) {
+    const current = sanitizeState(getDemoState());
+    const next = typeof updater === 'function' ? updater(current) : { ...current, ...updater };
+    saveDemoState(next);
+    return sanitizeState(next);
+  }
+
   const current = await getState();
   const next = typeof updater === 'function' ? updater(current) : { ...current, ...updater };
   const payload = await apiRequest('/state', {
@@ -179,14 +192,20 @@ export async function saveFamilyMember(member) {
 }
 
 export async function deleteFamilyMember(memberId) {
-  return updateState((state) => ({
-    ...state,
-    family: state.family.filter((item) => item.id !== memberId),
-    settings: {
-      ...state.settings,
-      activeProfileId: state.settings?.activeProfileId === memberId ? SELF_PROFILE_ID : state.settings?.activeProfileId
-    }
-  }));
+  return updateState((state) => {
+    const profileWaterGoals = { ...state.settings?.profileWaterGoals };
+    delete profileWaterGoals[memberId];
+
+    return {
+      ...state,
+      family: state.family.filter((item) => item.id !== memberId),
+      settings: {
+        ...state.settings,
+        profileWaterGoals,
+        activeProfileId: state.settings?.activeProfileId === memberId ? SELF_PROFILE_ID : state.settings?.activeProfileId
+      }
+    };
+  });
 }
 
 export async function setActiveProfile(profileId) {

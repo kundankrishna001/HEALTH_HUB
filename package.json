@@ -8,7 +8,8 @@
     "dev:server": "node server/index.js",
     "dev:all": "concurrently \"npm run dev:server\" \"npm run dev -- --host 0.0.0.0\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs:pdf": "node scripts/generate-project-pdf.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
+import { useAuth } from './AuthContext';
 import {
   deleteDietPlan as removeDietPlan,
   deleteRecipe as removeRecipe,
@@ -24,35 +26,57 @@ import { exportTextToPdf } from '../services/exportPdf';
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
+  const { user, bootstrapped } = useAuth();
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+
+  const refresh = useCallback(async () => {
+    const next = await getState();
+    setState(next);
+    setLoadError(null);
+    return next;
+  }, []);
 
   useEffect(() => {
+    if (!bootstrapped) return undefined;
+
+    if (!user) {
+      setState(null);
+      setLoading(false);
+      setLoadError(null);
+      return undefined;
+    }
+
     let mounted = true;
-    getState().then((next) => {
-      if (mounted) {
+    setLoading(true);
+    setLoadError(null);
+
+    getState()
+      .then((next) => {
+        if (!mounted) return;
         setState(next);
         setLoading(false);
-      }
-    }).catch(() => {
-      if (mounted) {
+      })
+      .catch((error) => {
+        if (!mounted) return;
         setState(null);
         setLoading(false);
-      }
-    });
+        const message = error?.message || 'Failed to load your data';
+        setLoadError(message);
+        toast.error(message);
+      });
+
     return () => {
       mounted = false;
     };
-  }, []);
-
-  const refresh = async () => {
-    setState(await getState());
-  };
+  }, [user?.id, bootstrapped]);
 
   const api = useMemo(
     () => ({
       state,
       loading,
+      loadError,
       refresh,
       updateProfile: async (profile) => {
         const next = await saveProfile(profile);
@@ -137,14 +161,14 @@ export function AppProvider({ children }) {
         setState(next);
         return next;
       },
-      generateWeeklyPlan: async (query = '') => await generateWeeklyPlan(query, state?.user || {}),
-      generateRecipe: async (name, servings) => await generateRecipe(name, servings, state?.user || {}),
-      detectSymptoms: async (text) => await detectSymptoms(text, state?.user || {}),
-      checkFood: async (food, meds) => await checkFood(food, state?.user || {}, meds || []),
-      scanFoodFromText: async (text) => await scanFoodFromText(text, state?.user || {}),
+      generateWeeklyPlan: async (query = '') => generateWeeklyPlan(query, state?.user || {}),
+      generateRecipe: async (name, servings) => generateRecipe(name, servings, state?.user || {}),
+      detectSymptoms: async (text) => detectSymptoms(text, state?.user || {}),
+      checkFood: async (food, meds = []) => checkFood(food, state?.user || {}, meds),
+      scanFoodFromText: async (text) => scanFoodFromText(text, state?.user || {}),
       exportPdf: (title, lines) => exportTextToPdf(title, lines)
     }),
-    [state, loading]
+    [state, loading, loadError, refresh]
   );
 
   return <AppContext.Provider value={api}>{children}</AppContext.Provider>;

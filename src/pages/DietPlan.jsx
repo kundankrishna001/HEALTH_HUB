@@ -17,19 +17,34 @@ export default function DietPlan() {
   const [planTitle, setPlanTitle] = useState('My weekly plan');
   const [selectedSavedId, setSelectedSavedId] = useState('');
 
+  const [loading, setLoading] = useState(false);
+
   const rows = useMemo(() => plan.map((item, index) => ({ id: index, ...item })), [plan]);
   const savedPlans = state?.dietPlans || [];
 
   const handleGenerate = async () => {
-    const next = await generateWeeklyPlan();
-    setPlan(next);
-    setSelectedSavedId('');
+    setLoading(true);
+    try {
+      const next = await generateWeeklyPlan();
+      setPlan(Array.isArray(next) ? next : []);
+      setSelectedSavedId('');
+      if (!next?.length) toast.error('No plan returned. Try again.');
+      else toast.success('7-day plan generated');
+    } catch (error) {
+      toast.error(error?.message || 'Could not generate plan');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
     if (!plan.length) return;
-    await saveDietPlan({ title: planTitle, source: 'weekly-generator', days: plan });
-    toast.success('Diet plan saved');
+    try {
+      await saveDietPlan({ title: planTitle, source: 'weekly-generator', days: plan });
+      toast.success('Diet plan saved');
+    } catch (error) {
+      toast.error(error?.message || 'Could not save plan');
+    }
   };
 
   const handleLoadSaved = (planId) => {
@@ -42,12 +57,16 @@ export default function DietPlan() {
   };
 
   const handleDeleteSaved = async (planId) => {
-    await deleteDietPlan(planId);
-    if (selectedSavedId === planId) {
-      setSelectedSavedId('');
-      setPlan([]);
+    try {
+      await deleteDietPlan(planId);
+      if (selectedSavedId === planId) {
+        setSelectedSavedId('');
+        setPlan([]);
+      }
+      toast.success('Plan removed');
+    } catch (error) {
+      toast.error(error?.message || 'Could not delete plan');
     }
-    toast.success('Plan removed');
   };
 
   return (
@@ -86,7 +105,7 @@ export default function DietPlan() {
       <SectionCard
         title="Weekly generator"
         subtitle="Produces a balanced plan instantly"
-        action={<PrimaryButton onClick={handleGenerate}>Generate 7-day plan</PrimaryButton>}
+        action={<PrimaryButton onClick={handleGenerate} disabled={loading}>{loading ? 'Generating…' : 'Generate 7-day plan'}</PrimaryButton>}
       >
         {plan.length ? (
           <div style={{ display: 'grid', gap: 16 }}>
@@ -118,7 +137,7 @@ export default function DietPlan() {
                 { key: 'lunch', label: 'Lunch' },
                 { key: 'dinner', label: 'Dinner' },
                 { key: 'calories', label: 'Calories' },
-                { key: 'badges', label: 'Condition badges', render: (row) => row.badges.join(' · ') }
+                { key: 'badges', label: 'Condition badges', render: (row) => (Array.isArray(row.badges) ? row.badges.join(' · ') : '—') }
               ]}
               rows={rows}
             />
